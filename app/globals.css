@@ -1,0 +1,97 @@
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #EEF1F5;
+  --card: #FFFFFF;
+  --ink: #111827;
+  --sub: #566072;
+  --line: #E3E7ED;
+  --soft: #F5F7FA;
+  --yellow: #FFC400;
+  --yellow-d: #E6AE00;
+  --blue: #2563EB;
+  --blue-l: #E8EFFE;
+  --green: #12803D;
+  --green-l: #E4F5EA;
+  --orange: #B8430A;
+  --orange-l: #FFEADB;
+  --red: #C62828;
+  --red-l: #FFF1F1;
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  touch-action: manipulation;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-figtree), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Accessible focus ring */
+button:focus-visible,
+input:focus-visible,
+a:focus-visible,
+[role="switch"]:focus-visible,
+[role="tab"]:focus-visible {
+  outline: 3px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* Touch optimizations for mobile */
+button,
+[role="button"],
+[role="switch"],
+[role="tab"] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Momentum scrolling for chips on iOS/Android */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.momentum-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe area utilities */
+.pb-safe {
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 16px));
+}
+.pt-safe {
+  padding-top: max(12px, env(safe-area-inset-top, 12px));
+}

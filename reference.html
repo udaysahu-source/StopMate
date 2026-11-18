@@ -1,0 +1,534 @@
+<title>Bus Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: two phone-sized screens side by side (Student, Driver); tabs switch between them on narrow screens. Light, rounded, one yellow brand color, blue for route and "you", green/orange for status. */
+:root{
+  --bg:#EEF1F5; --card:#FFFFFF; --ink:#111827; --sub:#566072; --line:#E3E7ED; --soft:#F5F7FA;
+  --yellow:#FFC400; --yellow-d:#E6AE00; --blue:#2563EB; --blue-l:#E8EFFE;
+  --green:#12803D; --green-l:#E4F5EA; --orange:#B8430A; --orange-l:#FFEADB; --red:#C62828;
+  --font:'Figtree',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:500 15px/1.45 var(--font);
+  padding-block:20px 40px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px))}
+button{font:inherit;color:inherit}
+.page{max-width:900px;margin-inline:auto;display:grid;gap:18px}
+
+.head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px}
+.head h1{margin:0;font:800 24px/1.1 var(--font);letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:11px;background:var(--yellow);display:grid;place-items:center;flex:none}
+.sample{margin:0;font-size:13px;color:var(--sub)}
+.tabs{display:inline-flex;background:#DEE3EA;border-radius:999px;padding:4px;gap:2px}
+.tabs button{border:0;background:transparent;border-radius:999px;padding:9px 20px;font-weight:700;color:var(--sub);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(17,24,39,.15)}
+.tabs button:focus-visible,.btn:focus-visible,.chip:focus-visible,.sw:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.screens{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;align-items:start}
+.phone{background:var(--card);border-radius:28px;box-shadow:0 10px 30px rgba(17,24,39,.10),0 1px 2px rgba(17,24,39,.08);overflow:hidden;max-width:430px;width:100%;margin-inline:auto;min-width:0}
+.pt{margin:0;padding:16px 18px 0;font:700 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+
+/* student */
+.mapwrap{position:relative;height:330px;background:#E9ECF0;margin-top:12px}
+.mapwrap svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.maptop{position:absolute;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.pillw{background:#fff;border-radius:999px;padding:7px 12px;font-weight:700;font-size:13px;box-shadow:0 2px 8px rgba(17,24,39,.15);display:inline-flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+.dot.off{background:#9AA3B2}
+.sheet{position:relative;margin-top:-22px;background:var(--card);border-radius:24px 24px 0 0;padding:18px 18px 20px;display:grid;gap:16px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.bname{font-weight:700}
+.bname span{color:var(--sub);font-weight:500}
+.chipst{font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px;background:var(--green-l);color:var(--green);white-space:nowrap}
+.chipst.off{background:#E8EBF0;color:var(--sub)}
+.eta{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#sBig{font:800 52px/1 var(--font);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+#sBig.txt{font-size:30px;line-height:1.15}
+#sUnit{font:700 20px var(--font);color:var(--sub)}
+#sSub{margin:6px 0 0;color:var(--sub)}
+.label{font:700 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--sub);margin:0 0 8px}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chip{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:600;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.alert{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--soft);border-radius:16px;padding:12px 14px}
+.alert b{display:block}
+.alert small{color:var(--sub);font-size:13px}
+.sw{flex:none;width:50px;height:30px;border-radius:999px;border:0;background:#C9D0DA;position:relative;cursor:pointer}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.sw[aria-checked="true"]{background:var(--blue)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+.toast{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--blue);color:#fff;border-radius:16px;padding:12px 14px;font-weight:600}
+.toast button{border:0;background:rgba(255,255,255,.22);color:#fff;border-radius:10px;padding:6px 10px;font-weight:700;cursor:pointer}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:46px}
+.tl li::before{content:"";position:absolute;left:10px;top:-23px;bottom:23px;width:2px;background:var(--line)}
+.tl li:first-child::before{display:none}
+.tl .pip{width:12px;height:12px;border-radius:50%;border:3px solid #B5BECB;background:#fff;justify-self:center;position:relative;z-index:1}
+.tl li.done .pip{background:#B5BECB}
+.tl li.next .pip{border-color:var(--blue);background:var(--blue-l)}
+.tl li.now .pip{border-color:var(--yellow-d);background:var(--yellow)}
+.tl .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.tl li.done .nm,.tl li.done .tm{color:#8A94A4}
+.tl .tm{font-weight:600;font-variant-numeric:tabular-nums;color:var(--sub);white-space:nowrap}
+.tl li.now .tm{color:var(--orange)}
+.you{display:inline-block;margin-left:6px;background:var(--blue-l);color:var(--blue);font-size:11px;font-weight:800;border-radius:6px;padding:2px 6px;letter-spacing:.04em;vertical-align:1px}
+.fine{margin:0;font-size:13px;color:var(--sub)}
+
+/* driver */
+.dv{padding:14px 18px 22px;display:grid;gap:16px}
+.dtop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.dtop b{font:800 20px var(--font)}
+.dtop span{color:var(--sub);font-size:14px}
+.gps{font-weight:700;font-size:13px;border-radius:999px;padding:5px 11px;background:var(--green-l);color:var(--green);white-space:nowrap}
+.status{border-radius:22px;padding:20px 18px;background:var(--soft);display:grid;gap:6px;text-align:center}
+.status.live{background:var(--green-l)}
+.status h2{margin:0;font:800 26px/1.15 var(--font)}
+.status p{margin:0;color:var(--sub)}
+.status .tm{font:800 34px/1 var(--font);font-variant-numeric:tabular-nums;margin-top:6px}
+.btn{border:0;border-radius:20px;font:800 20px/1 var(--font);padding:24px 16px;width:100%;cursor:pointer;background:var(--yellow);color:var(--ink)}
+.btn:hover{background:var(--yellow-d)}
+.btn.end{background:#fff;color:var(--red);box-shadow:inset 0 0 0 2px var(--red)}
+.btn.end:hover{background:#FFF1F1}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:var(--soft);border-radius:16px;padding:12px}
+.stat dt{font:700 11px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--sub);margin-bottom:8px}
+.stat dd{margin:0;font:800 20px/1.1 var(--font);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stat dd small{font-size:12px;font-weight:600;color:var(--sub)}
+.track{position:relative;height:10px;border-radius:99px;background:#E3E7ED;margin:6px 6px 30px}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--yellow)}
+.td{position:absolute;top:50%;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#fff;border:3px solid #B5BECB}
+.td.on{border-color:var(--yellow-d)}
+.tn{position:absolute;top:18px;font-size:11px;font-weight:600;color:var(--sub);white-space:nowrap;transform:translateX(-50%)}
+.tn.f{transform:none}.tn.l{transform:translateX(-100%)}
+
+.lock{display:flex;gap:12px;align-items:center}
+.lock .ic{width:44px;height:44px;border-radius:14px;background:var(--soft);display:grid;place-items:center;flex:none}
+.lock b{display:block;font:800 20px/1.2 var(--font)}
+.lock .tx{display:block;color:var(--sub);font-size:14px;margin-top:2px}
+.fld{display:grid;gap:6px}
+.fld label{font:700 12px/1 var(--font);letter-spacing:.08em;text-transform:uppercase;color:var(--sub)}
+.fld input{font:600 18px var(--font);padding:14px;border-radius:14px;border:1.5px solid var(--line);background:#fff;color:var(--ink);width:100%}
+.fld input:focus-visible{outline:3px solid var(--blue);outline-offset:1px;border-color:var(--blue)}
+.err{margin:0;background:var(--orange-l);color:var(--orange);border-radius:12px;padding:10px 12px;font-weight:600;font-size:14px}
+.demo{margin:0;background:var(--blue-l);color:#1E3A8A;border-radius:12px;padding:10px 12px;font-size:13px}
+.btn2{border:0;background:var(--soft);border-radius:16px;padding:14px;font-weight:700;width:100%;cursor:pointer}
+.btn2:hover{background:#E8EBF0}
+.btn2:focus-visible,.fld input:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.flow{background:var(--card);border-radius:28px;padding:22px 20px;box-shadow:0 10px 30px rgba(17,24,39,.10),0 1px 2px rgba(17,24,39,.08);display:grid;gap:16px;min-width:0}
+.flow h2{margin:0;font:800 20px/1.2 var(--font)}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.role{background:var(--soft);border-radius:18px;padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
+.role h3{margin:0;font:800 17px var(--font)}
+.role .who{margin:0;color:var(--sub);font-size:14px}
+.role ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.role li.no{color:var(--red);font-weight:600}
+.flow pre.mermaid{margin:0;overflow-x:auto;background:transparent}
+.rules{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
+
+@media (max-width:899px){
+  .screens{grid-template-columns:minmax(0,1fr)}
+  body[data-tab="student"] #driverScreen,body[data-tab="driver"] #studentScreen{display:none}
+}
+@media (min-width:900px){.tabs{display:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@keyframes halo{from{transform:scale(.6);opacity:.55}to{transform:scale(1.7);opacity:0}}
+.halo{transform-box:fill-box;transform-origin:center;animation:halo 1.8s ease-out infinite}
+</style>
+
+<div class="page">
+  <header class="head">
+    <h1><span class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="-12 -11 24 22"><rect x="-10" y="-9" width="20" height="16" rx="4" fill="#111827"/><rect x="-7" y="-6" width="14" height="6" rx="1.5" fill="#FFC400"/><circle cx="-5" cy="9" r="2.5" fill="#111827"/><circle cx="5" cy="9" r="2.5" fill="#111827"/></svg></span>Bus Tracker</h1>
+    <div class="tabs" role="tablist" aria-label="Screens">
+      <button type="button" role="tab" id="tabS" aria-selected="true" aria-controls="studentScreen">Student</button>
+      <button type="button" role="tab" id="tabD" aria-selected="false" aria-controls="driverScreen">Driver</button>
+    </div>
+    <p class="sample">Sample data. Anyone can watch the bus, but only a signed-in driver can control it. Try the Driver screen.</p>
+  </header>
+
+  <div class="screens">
+    <section class="phone" id="studentScreen" aria-label="Student screen">
+      <p class="pt">Student</p>
+      <div class="mapwrap" id="mapwrap">
+        <svg id="map" viewBox="0 0 620 540" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Map showing the bus moving along its route toward your stop">
+          <g id="gBase"></g><g id="gRoute"></g><g id="gStops"></g><g id="gYou"></g><g id="gBus"></g>
+        </svg>
+        <div class="maptop"><span class="pillw"><span class="dot" id="liveDot"></span><span id="liveTxt">Live</span></span><span class="pillw" id="spdPill">0 km/h</span></div>
+      </div>
+      <div class="sheet">
+        <div class="row"><div class="bname">Bus 01 <span>Saddu line</span></div><span class="chipst" id="sChip">On time</span></div>
+        <div>
+          <div class="eta"><span id="sBig">--</span><span id="sUnit">min</span></div>
+          <p id="sSub">--</p>
+        </div>
+        <div class="toast" id="toast" hidden role="status"><span id="toastTxt"></span><button type="button" id="toastX">Got it</button></div>
+        <div>
+          <p class="label">My stop</p>
+          <div class="chips" id="stopChips" role="group" aria-label="Choose your stop"></div>
+        </div>
+        <div class="alert">
+          <div><b>Alert me 5 min before</b><small>In the app this is a phone notification.</small></div>
+          <button type="button" class="sw" id="sw" role="switch" aria-checked="true" aria-label="Alert me 5 minutes before the bus arrives"></button>
+        </div>
+        <div>
+          <p class="label">Stops</p>
+          <ul class="tl" id="tl"></ul>
+        </div>
+        <p class="fine" id="fresh">Location comes from the driver's phone.</p>
+      </div>
+    </section>
+
+    <section class="phone" id="driverScreen" aria-label="Driver screen">
+      <p class="pt">Driver</p>
+      <form class="dv" id="dvLogin" novalidate>
+        <div class="lock">
+          <span class="ic" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111827" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="3"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+          <div><b>Driver sign in</b><span class="tx">Only drivers added by the admin can start or stop GPS sharing.</span></div>
+        </div>
+        <div class="fld"><label for="dPhone">Phone number</label><input id="dPhone" inputmode="numeric" autocomplete="tel" placeholder="90000 00001" maxlength="11"></div>
+        <div class="fld"><label for="dPin">4-digit PIN</label><input id="dPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="4" placeholder="••••"></div>
+        <p class="err" id="dErr" role="alert" hidden></p>
+        <button type="submit" class="btn">Sign in</button>
+        <p class="demo">Demo only. 90000 00001 with PIN 1234 is an approved driver. 90000 00002 with PIN 5678 is waiting for approval. Any other number is not registered.</p>
+        <p class="fine">Students do not sign in. Watch the bus from the Student screen.</p>
+      </form>
+      <div class="dv" id="dvApp" hidden>
+        <div class="dtop"><div><b>Bus 01</b><br><span id="dWho">Driver</span></div><span class="gps">GPS strong</span></div>
+        <div class="status" id="dStatus">
+          <h2 id="dHead">Trip live</h2>
+          <p id="dSub">Students can see your bus.</p>
+          <div class="tm" id="dTime">00:00</div>
+        </div>
+        <button type="button" class="btn end" id="dBtn">End trip</button>
+        <dl class="stats" style="margin:0">
+          <div class="stat"><dt>Speed</dt><dd><span id="dSpd">0</span> <small>km/h</small></dd></div>
+          <div class="stat"><dt>Next stop</dt><dd id="dNext" style="font-size:15px">--</dd></div>
+          <div class="stat"><dt>To college</dt><dd><span id="dEta">--</span> <small>min</small></dd></div>
+        </dl>
+        <div>
+          <p class="label">Route progress</p>
+          <div class="track" id="track"><div class="fill" id="fill"></div></div>
+        </div>
+        <p class="fine">The trip ends by itself when you reach College.</p>
+        <div>
+          <button type="button" class="btn2" id="dOut">Sign out</button>
+          <p class="err" id="dOutNote" role="status" hidden style="margin-top:10px"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="flow" aria-label="Access rules and driver workflow">
+    <h2>Who can do what</h2>
+    <div class="roles">
+      <div class="role">
+        <h3>Student</h3>
+        <p class="who">Anyone with the link. No sign in.</p>
+        <ul>
+          <li>See the live bus and ETA</li>
+          <li>Pick My stop and get alerts</li>
+          <li class="no">Cannot start, stop or change GPS</li>
+        </ul>
+      </div>
+      <div class="role">
+        <h3>Driver</h3>
+        <p class="who">Added and approved by the admin. Signs in.</p>
+        <ul>
+          <li>Start and end a trip on their own bus</li>
+          <li>Phone shares GPS only during a trip</li>
+          <li class="no">Cannot add drivers or control other buses</li>
+        </ul>
+      </div>
+      <div class="role">
+        <h3>Admin</h3>
+        <p class="who">You, for now.</p>
+        <ul>
+          <li>Add, approve and remove drivers</li>
+          <li>Assign each driver to a bus</li>
+          <li>End any trip if something goes wrong</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Driver trip workflow</h2>
+    <pre class="mermaid">
+flowchart TD
+  A[Driver opens the driver page] --> B[Signs in with phone and PIN]
+  B --> C{Registered and approved}
+  C -- No --> D[Access denied and nothing to control]
+  C -- Yes --> E[Presses Start trip]
+  E --> F[Phone asks for location permission]
+  F --> G[Phone sends GPS every 5 seconds]
+  G --> H{Server checks the driver owns this bus}
+  H -- No --> I[Update rejected]
+  H -- Yes --> J[Students see the bus move live]
+  J --> K{Reached college or End trip pressed}
+  K -- No --> G
+  K -- Yes --> L[Trip ends and GPS sharing stops]
+    </pre>
+
+    <h2>How the real app keeps students out</h2>
+    <p class="fine">The sign in on this page is only a demo of the screens. Hiding a button protects nothing, so in the real app the server makes every decision.</p>
+    <ul class="rules">
+      <li>Roles live in a drivers table in the database: phone, name, assigned bus, and a status of pending, approved or removed.</li>
+      <li>Drivers sign in with Supabase Auth, using a phone code instead of the demo PIN. A student account has no row in the drivers table.</li>
+      <li>Row Level Security lets everyone read bus positions, but only the approved driver assigned to that bus can write a position or start or end its trip.</li>
+      <li>One active trip per bus. A second Start trip is refused while one is running.</li>
+      <li>The server ends the trip when a position lands within about 100 m of College. If no position arrives for 2 minutes, students see Bus offline.</li>
+      <li>Location is stored only during a trip. Removing a driver in the admin stops their access at once.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg', W=1000, H=680, DW=2.5, V=15, SIMK=13;
+  function $(s){return document.querySelector(s)}
+  function el(n,a,p){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e}
+  function pad(n){return String(n).padStart(2,'0')}
+  function clk(d){var h=d.getHours(),m=d.getMinutes(),ap=h>=12?'PM':'AM';h=h%12||12;return h+':'+pad(m)+' '+ap}
+  function mm(s){return pad(Math.floor(s/60))+':'+pad(Math.floor(s%60))}
+
+  /* sample route: [x, y, stop name | null, short name] */
+  var pts=[[110,560,'Saddu','Saddu'],[180,560],[260,525,'Saddu Stop 2','Stop 2'],[380,525],[380,360],[470,360,'Shankar Nagar','Shankar'],[560,360],[560,262],[660,262,'Mid Stop','Mid'],[770,262],[770,140],[870,140,'College','College']];
+  var cum=[0];for(var i=1;i<pts.length;i++)cum[i]=cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);
+  var total=cum[cum.length-1];
+  var stops=[];pts.forEach(function(p,i){if(p[2])stops.push({name:p[2],short:p[3],d:cum[i],x:p[0],y:p[1]})});
+  function at(d){
+    var i=1;while(i<cum.length-1&&cum[i]<d)i++;
+    var a=pts[i-1],c=pts[i],t=(d-cum[i-1])/((cum[i]-cum[i-1])||1);
+    return{x:a[0]+(c[0]-a[0])*t,y:a[1]+(c[1]-a[1])*t,h:(Math.atan2(c[0]-a[0],-(c[1]-a[1]))*180/Math.PI+360)%360};
+  }
+
+  /* simulation state */
+  var bus={d:total*.1,dwell:0,next:1,trip:'live',t0:performance.now(),lastSeen:performance.now()};
+  function syncNext(){bus.next=stops.length;for(var i=0;i<stops.length;i++){if(stops[i].d>bus.d+.01){bus.next=i;break}}}
+  syncNext();
+  var S={my:2,notified:false,alertOn:true,tab:'student',user:null,tries:0,lockUntil:0,cam:{x:at(bus.d).x,y:at(bus.d).y}};
+  function etaSim(i){ if(i<bus.next)return null; return (stops[i].d-bus.d)/V+Math.max(0,bus.dwell)+(i-bus.next)*DW }
+  function etaMin(i){var s=etaSim(i);return s==null?null:s*SIMK/60}
+
+  /* map: light city style drawn in SVG */
+  (function base(){
+    var g=$('#gBase');
+    el('rect',{x:-200,y:-200,width:1400,height:1100,fill:'#EAEDF1'},g);
+    [[40,40,160,110],[640,420,170,120],[250,40,120,80],[900,300,120,150],[40,330,130,100],[700,20,110,70]].forEach(function(r){el('rect',{x:r[0],y:r[1],width:r[2],height:r[3],rx:18,fill:'#D6EBD3'},g)});
+    el('path',{d:'M-100 470 C 100 420 240 650 520 690 S 900 730 1100 650',fill:'none',stroke:'#BCDDF3','stroke-width':54,'stroke-linecap':'round'},g);
+    var xs=[],ys=[];pts.forEach(function(p){if(xs.indexOf(p[0])<0)xs.push(p[0]);if(ys.indexOf(p[1])<0)ys.push(p[1])});
+    function near(a,v){return a.some(function(k){return Math.abs(k-v)<30})}
+    var minor=[];
+    for(var x=20;x<1000;x+=95)if(!near(xs,x))minor.push(['v',x]);
+    for(var y=20;y<680;y+=95)if(!near(ys,y))minor.push(['h',y]);
+    function road(o,v,wc,ww){
+      var a=o==='v'?{x1:v,y1:-100,x2:v,y2:800}:{x1:-100,y1:v,x2:1100,y2:v};
+      var c=Object.assign({stroke:'#D3D8DF','stroke-width':wc},a),w=Object.assign({stroke:'#fff','stroke-width':ww},a);
+      el('line',c,g);el('line',w,g);
+    }
+    minor.forEach(function(m){road(m[0],m[1],9,6)});
+    xs.forEach(function(x){road('v',x,22,16)});
+    ys.forEach(function(y){road('h',y,22,16)});
+  })();
+
+  var view={w:620,h:540,U:1};
+  var gStops=$('#gStops'),gYou=$('#gYou'),gBus=$('#gBus'),svg=$('#map');
+  var routeBack=el('polyline',{fill:'none',stroke:'#B5BECB','stroke-width':11,'stroke-linejoin':'round','stroke-linecap':'round'},$('#gRoute'));
+  var routeAhead=el('polyline',{fill:'none',stroke:'#2563EB','stroke-width':11,'stroke-linejoin':'round','stroke-linecap':'round'},$('#gRoute'));
+  var stopEls=[];
+  var youG=null,busG,busInner,arrowG;
+
+  function sizeView(){
+    var r=$('#mapwrap').getBoundingClientRect(),cw=r.width||400,ch=r.height||330;
+    view.w=600;view.h=600*ch/cw;view.U=view.w/cw;
+    buildOverlay();
+  }
+  function buildOverlay(){
+    var U=view.U;
+    gStops.innerHTML='';stopEls=[];
+    stops.forEach(function(s,i){
+      var g=el('g',{transform:'translate('+s.x+' '+s.y+') scale('+U+')'},gStops);
+      el('circle',{r:7,fill:'#fff',stroke:'#111827','stroke-width':3},g);
+      var t=el('text',{x:0,y:24,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#111827',stroke:'#fff','stroke-width':4,'paint-order':'stroke','stroke-linejoin':'round','font-family':'Figtree,system-ui,sans-serif'},g);
+      t.textContent=s.short;stopEls.push(g);
+    });
+    gYou.innerHTML='';
+    var ys=stops[S.my];
+    youG=el('g',{transform:'translate('+ys.x+' '+ys.y+') scale('+U+')'},gYou);
+    el('circle',{r:16,fill:'#2563EB',opacity:.35,class:'halo'},youG);
+    el('circle',{r:10,fill:'#2563EB',stroke:'#fff','stroke-width':3.5},youG);
+    var yt=el('text',{x:0,y:-18,'text-anchor':'middle','font-size':12,'font-weight':800,fill:'#2563EB',stroke:'#fff','stroke-width':4,'paint-order':'stroke','stroke-linejoin':'round','font-family':'Figtree,system-ui,sans-serif'},youG);
+    yt.textContent='Your stop';
+    gBus.innerHTML='';
+    busG=el('g',{},gBus);
+    el('circle',{r:26,fill:'#FFC400',opacity:.35,class:'halo'},busG);
+    arrowG=el('g',{},busG);
+    el('polygon',{points:'0,-40 8,-28 -8,-28',fill:'#111827'},arrowG);
+    el('circle',{r:23,fill:'#FFC400',stroke:'#111827','stroke-width':3},busG);
+    el('rect',{x:-11,y:-10,width:22,height:18,rx:4.5,fill:'#111827'},busG);
+    el('rect',{x:-8,y:-7,width:16,height:7,rx:2,fill:'#FFC400'},busG);
+    el('circle',{cx:-5.5,cy:10,r:3,fill:'#111827'},busG);el('circle',{cx:5.5,cy:10,r:3,fill:'#111827'},busG);
+    placeStops();
+  }
+  function placeStops(){
+    var U=view.U,ys=stops[S.my];
+    if(youG)youG.setAttribute('transform','translate('+ys.x+' '+ys.y+') scale('+U+')');
+    stopEls.forEach(function(g,i){g.style.display=i===S.my?'none':''});
+  }
+
+  /* chips, timeline, driver track */
+  var chipBox=$('#stopChips'),tl=$('#tl'),chipEls=[],tlRows=[];
+  stops.forEach(function(s,i){
+    var b=document.createElement('button');b.type='button';b.className='chip';b.textContent=s.name;b.setAttribute('aria-pressed',i===S.my?'true':'false');
+    b.addEventListener('click',function(){S.my=i;S.notified=false;$('#toast').hidden=true;chipEls.forEach(function(c,j){c.setAttribute('aria-pressed',j===i?'true':'false')});placeStops();refresh()});
+    chipBox.appendChild(b);chipEls.push(b);
+    var li=document.createElement('li');li.innerHTML='<span class="pip"></span><span class="nm"></span><span class="tm"></span>';
+    tl.appendChild(li);tlRows.push({li:li,nm:li.querySelector('.nm'),tm:li.querySelector('.tm')});
+  });
+  var track=$('#track'),tdots=[];
+  stops.forEach(function(s,i){
+    var f=s.d/total*100;
+    var d=document.createElement('span');d.className='td';d.style.left=f+'%';track.appendChild(d);tdots.push(d);
+    if(i===1)return;
+    var n=document.createElement('span');n.className='tn'+(i===0?' f':(i===stops.length-1?' l':''));n.style.left=f+'%';n.textContent=s.short;track.appendChild(n);
+  });
+
+  /* UI refresh (4 times a second) */
+  function refresh(){
+    var now=new Date(),b=bus,my=stops[S.my],st=b.trip;
+    var passed=S.my<b.next&&!(b.dwell>0&&S.my===b.next-1),atMy=b.dwell>0&&S.my===b.next-1&&st==='live';
+    var speed=(st==='live'&&b.dwell<=0)?Math.round(V*1.9):0;
+    $('#spdPill').textContent=speed+' km/h';
+    $('#liveDot').className='dot'+(st==='live'?'':' off');
+    $('#liveTxt').textContent=st==='live'?'Live':(st==='ended'?'Trip ended':'Not running');
+    var chip=$('#sChip');chip.className='chipst'+(st==='live'?'':' off');chip.textContent=st==='live'?'On time':(st==='ended'?'Trip ended':'Not running');
+    var big=$('#sBig'),unit=$('#sUnit'),sub=$('#sSub');
+    big.className='';unit.hidden=false;
+    if(st==='idle'){big.textContent='Bus stopped';big.className='txt';unit.hidden=true;sub.textContent='The driver ended this trip. Waiting for the next one.'}
+    else if(st==='ended'&&b.d>=total-.01&&S.my<stops.length){big.textContent='Reached College';big.className='txt';unit.hidden=true;sub.textContent='Bus 01 finished its trip. It will start again from Saddu.'}
+    else if(atMy){big.textContent='At your stop';big.className='txt';unit.hidden=true;sub.textContent='Bus 01 is boarding at '+my.name+' now.'}
+    else if(passed){big.textContent='Passed your stop';big.className='txt';unit.hidden=true;sub.textContent='Bus 01 already left '+my.name+'. Pick another stop or wait for the next trip.'}
+    else{
+      var m=etaMin(S.my);
+      if(m<1){big.textContent='Arriving';big.className='txt';unit.hidden=true}else{big.textContent=Math.ceil(m);unit.textContent='min'}
+      sub.textContent='Arrives '+clk(new Date(now.getTime()+m*60000))+' at '+my.name;
+    }
+    var secs=Math.max(0,Math.round((performance.now()-b.lastSeen)/1000));
+    $('#fresh').textContent=st==='live'?'Updated '+(secs<=1?'just now':secs+' sec ago')+' from the driver\'s phone.':'Last seen at '+clk(new Date(now.getTime()-secs*1000))+'.';
+    /* alert */
+    if(S.alertOn&&!S.notified&&st==='live'&&!passed&&!atMy){
+      var mm5=etaMin(S.my);
+      if(mm5<=5){S.notified=true;$('#toastTxt').textContent='Bus 01 is about 5 min from '+my.name+'.';$('#toast').hidden=false}
+    }
+    /* timeline */
+    stops.forEach(function(s,i){
+      var r=tlRows[i],done=i<b.next&&!(b.dwell>0&&i===b.next-1),here=b.dwell>0&&i===b.next-1&&st==='live',nxt=i===b.next&&st==='live';
+      r.li.className=here?'now':(done?'done':(nxt?'next':''));
+      r.nm.innerHTML=s.name+(i===S.my?'<span class="you">YOU</span>':'');
+      var e=etaMin(i);
+      r.tm.textContent=here?'Here now':(done?'Passed':(st==='live'&&e!=null?clk(new Date(now.getTime()+e*60000)):'--'));
+    });
+    /* driver */
+    var live=st==='live',nx=stops[Math.min(b.next,stops.length-1)],eC=etaMin(stops.length-1);
+    var ds=$('#dStatus');ds.className='status'+(live?' live':'');
+    var btn=$('#dBtn');
+    if(live){$('#dHead').textContent='Trip live';$('#dSub').textContent='Sharing your location with students.';$('#dTime').textContent=mm((performance.now()-b.t0)/1000);btn.textContent='End trip';btn.className='btn end'}
+    else if(st==='ended'){$('#dHead').textContent='Reached College';$('#dSub').textContent='Trip ended automatically. Location sharing is off.';$('#dTime').textContent=mm((b.endT-b.t0)/1000);btn.textContent='Start new trip';btn.className='btn'}
+    else{$('#dHead').textContent='Trip ended';$('#dSub').textContent='You ended this trip early. Location sharing is off.';$('#dTime').textContent=mm((b.endT-b.t0)/1000);btn.textContent='Start trip';btn.className='btn'}
+    $('#dSpd').textContent=speed;$('#dNext').textContent=b.d>=total-.01?'College':nx.name;$('#dEta').textContent=eC==null?'0':Math.ceil(eC);
+    $('#fill').style.width=(b.d/total*100)+'%';
+    tdots.forEach(function(d,i){d.className='td'+(stops[i].d<=b.d+.01?' on':'')});
+  }
+
+  /* driver sign in. Demo only: in the real app the server checks this, not the page. */
+  var DRIVERS={'9000000001':{pin:'1234',name:'R. Verma',status:'approved'},'9000000002':{pin:'5678',name:'S. Patel',status:'pending'}};
+  function showDriver(){
+    var on=!!S.user;$('#dvLogin').hidden=on;$('#dvApp').hidden=!on;
+    if(on)$('#dWho').textContent='Driver: '+S.user.name;
+  }
+  $('#dvLogin').addEventListener('submit',function(e){
+    e.preventDefault();
+    var err=$('#dErr'),now=Date.now();
+    function bad(m){err.textContent=m;err.hidden=false}
+    if(now<S.lockUntil){bad('Too many tries. Wait '+Math.ceil((S.lockUntil-now)/1000)+' seconds.');return}
+    var ph=$('#dPhone').value.replace(/\D/g,''),pin=$('#dPin').value;
+    if(ph.length!==10){bad('Enter your 10 digit phone number.');return}
+    if(!/^\d{4}$/.test(pin)){bad('Enter your 4 digit PIN.');return}
+    var u=DRIVERS[ph];
+    if(!u){bad('This number is not registered as a driver. Ask the admin to add you.');return}
+    if(u.pin!==pin){
+      S.tries++;
+      if(S.tries>=3){S.tries=0;S.lockUntil=now+30000;bad('Too many tries. Wait 30 seconds.')}
+      else bad('Wrong PIN. '+(3-S.tries)+' tries left.');
+      return;
+    }
+    if(u.status!=='approved'){bad('Your account is waiting for admin approval.');return}
+    S.tries=0;err.hidden=true;$('#dPin').value='';S.user=u;showDriver();
+  });
+  $('#dOut').addEventListener('click',function(){
+    var n=$('#dOutNote');
+    if(bus.trip==='live'){n.textContent='End your trip before signing out.';n.hidden=false;return}
+    n.hidden=true;S.user=null;showDriver();
+  });
+
+  /* driver controls */
+  $('#dBtn').addEventListener('click',function(){
+    if(!S.user)return;
+    $('#dOutNote').hidden=true;
+    if(bus.trip==='live'){bus.trip='idle';bus.endT=performance.now()}
+    else{bus.d=0;bus.dwell=0;syncNext();bus.next=1;bus.trip='live';bus.t0=performance.now();bus.lastSeen=bus.t0;S.notified=false;$('#toast').hidden=true}
+    refresh();
+  });
+  $('#sw').addEventListener('click',function(){S.alertOn=!S.alertOn;this.setAttribute('aria-checked',S.alertOn?'true':'false');if(S.alertOn)S.notified=false});
+  $('#toastX').addEventListener('click',function(){$('#toast').hidden=true});
+
+  /* tabs for narrow screens */
+  function setTab(t){
+    S.tab=t;document.body.setAttribute('data-tab',t);
+    $('#tabS').setAttribute('aria-selected',t==='student'?'true':'false');$('#tabD').setAttribute('aria-selected',t==='driver'?'true':'false');
+    if(t==='student')sizeView();
+  }
+  $('#tabS').addEventListener('click',function(){setTab('student')});
+  $('#tabD').addEventListener('click',function(){setTab('driver')});
+
+  /* loop */
+  var last=performance.now(),acc=0;
+  function frame(now){
+    var dt=Math.min(.1,(now-last)/1000);last=now;
+    if(bus.trip==='live'){
+      bus.lastSeen=now-(Math.random()<.02?900:0);
+      if(bus.dwell>0){bus.dwell-=dt}
+      else{
+        bus.d+=V*dt;
+        var tg=stops[bus.next];
+        if(tg&&bus.d>=tg.d){bus.d=tg.d;bus.next++;bus.dwell=DW;
+          if(bus.next>=stops.length){bus.dwell=0;bus.trip='ended';bus.endT=now;bus.d=total}}
+      }
+    }
+    var p=at(bus.d);
+    S.cam.x+=(p.x-S.cam.x)*Math.min(1,dt*3);S.cam.y+=(p.y-S.cam.y)*Math.min(1,dt*3);
+    var hw=view.w/2,hh=view.h/2;
+    var cx=Math.max(hw-60,Math.min(W-hw+60,S.cam.x)),cy=Math.max(hh-60,Math.min(H-hh+60,S.cam.y));
+    svg.setAttribute('viewBox',(cx-hw).toFixed(1)+' '+(cy-hh).toFixed(1)+' '+view.w.toFixed(1)+' '+view.h.toFixed(1));
+    busG.setAttribute('transform','translate('+p.x.toFixed(1)+' '+p.y.toFixed(1)+') scale('+view.U+')');
+    arrowG.setAttribute('transform','rotate('+p.h.toFixed(0)+')');
+    var behind=[],ahead=[];
+    for(var i=0;i<pts.length;i++){if(cum[i]<=bus.d)behind.push(pts[i][0]+','+pts[i][1])}
+    var j=0;while(j<pts.length&&cum[j]<=bus.d)j++;
+    ahead.push(p.x.toFixed(1)+','+p.y.toFixed(1));for(;j<pts.length;j++)ahead.push(pts[j][0]+','+pts[j][1]);
+    behind.push(p.x.toFixed(1)+','+p.y.toFixed(1));
+    routeBack.setAttribute('points',behind.join(' '));routeAhead.setAttribute('points',ahead.join(' '));
+    acc+=dt;if(acc>.25){acc=0;refresh()}
+    requestAnimationFrame(frame);
+  }
+
+  setTab('student');
+  showDriver();sizeView();refresh();
+  if(window.ResizeObserver)new ResizeObserver(function(){sizeView()}).observe($('#mapwrap'));
+  else window.addEventListener('resize',sizeView);
+  requestAnimationFrame(frame);
+})();
+</script>
